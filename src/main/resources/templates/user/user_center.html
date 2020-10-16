@@ -1,0 +1,453 @@
+<!DOCTYPE html >
+<html
+        xmlns:th="http://www.thymeleaf.org"
+>
+
+<head th:replace="common/common::common_header(~{::title},~{})">
+    <title>合思达渠道支付平台</title>
+</head>
+
+<body>
+
+<div id="app" v-cloak>
+
+    <el-card class="box-card">
+        <div slot="header">
+            <span>基本信息</span>
+        </div>
+        <div class="box-card-item">
+            <el-form label-position="left" label-width="120px" size="mini">
+                <el-form-item label="昵称：">
+                    <font v-if="form.nickName.visible===false">
+                        {{userInfo.nickName}}
+                        <el-link type="primary" class="box-card-item-link" @click="editNickName('show')">修改</el-link>
+                    </font>
+                    <el-input placeholder="请输入内容" ref="nickNameInput" v-model="form.nickName.value"
+                              v-if="form.nickName.visible" style="width:300px">
+                        <template slot="append">
+                            <el-button type="success" @click="editNickName('save')">保存</el-button>
+                            <el-button type="info" @click="editNickName('cancel')">取消</el-button>
+                        </template>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="登陆账号：">
+                    {{userInfo.userName}}
+                    <el-link type="primary" class="box-card-item-link" @click="editPassword('show')">修改密码</el-link>
+                </el-form-item>
+                <el-form-item label="公司名称：">
+                    <font v-if="form.companyName.visible===false">
+                        {{userInfo.companyName}}
+                        <el-link type="primary" class="box-card-item-link" @click="editCompanyName('show')">修改</el-link>
+                    </font>
+                    <el-input placeholder="请输入内容" ref="companyNameInput" v-model="form.companyName.value"
+                              v-if="form.companyName.visible" style="width:300px">
+                        <template slot="append">
+                            <el-button type="success" @click="editCompanyName('save')">保存</el-button>
+                            <el-button type="info" @click="editCompanyName('cancel')">取消</el-button>
+                        </template>
+                    </el-input>
+                </el-form-item>
+                <el-form-item label="注册时间：">
+                    {{userInfo.registerTime}}
+                </el-form-item>
+                <el-form-item label="开发参数">
+                    <el-button type="success" @click="showSelfClient">查看</el-button>
+                </el-form-item>
+            </el-form>
+        </div>
+    </el-card>
+
+
+    <el-card class="box-card">
+        <div slot="header">
+            <span>联系信息</span>
+        </div>
+        <el-form label-position="left" label-width="120px" size="mini">
+            <el-form-item label="所在地区：">
+                {{userInfo.city}}
+            </el-form-item>
+            <el-form-item label="详细地址：">
+                {{userInfo.address}}
+            </el-form-item>
+            <el-form-item label="电子邮箱：">
+                <font v-if="form.email.visible===false">
+                    {{userInfo.email}}
+                    <el-link type="primary" class="box-card-item-link" @click="editEmail('show')">修改</el-link>
+                    <el-link v-if="!userInfo.emailChecked" class="box-card-item-link" @click="checkEmailVisible=true">
+                        验证邮箱
+                    </el-link>
+                </font>
+                <el-input placeholder="请输入内容" ref="emailInput" v-model="form.email.value"
+                          v-if="form.email.visible" style="width:300px">
+                    <template slot="append">
+                        <el-button type="success" @click="editEmail('save')">保存</el-button>
+                        <el-button type="info" @click="editEmail('cancel')">取消</el-button>
+                    </template>
+                </el-input>
+            </el-form-item>
+        </el-form>
+    </el-card>
+
+
+    <el-card class="box-card">
+        <div slot="header">
+            <span>业务信息</span>
+        </div>
+        <el-form label-position="left" label-width="120px" size="mini">
+
+            <el-form-item label="所属行业：">
+                <font v-if="form.industry.visible===false">
+                    {{userInfo.industry}}
+                    <el-link type="primary" class="box-card-item-link" @click="editIndustry('show')">修改</el-link>
+                </font>
+                <el-input placeholder="请输入内容" ref="industryInput" v-model="form.industry.value"
+                          v-if="form.industry.visible" style="width:300px">
+                    <template slot="append">
+                        <el-button type="success" @click="editIndustry('save')">保存</el-button>
+                        <el-button type="info" @click="editIndustry('cancel')">取消</el-button>
+                    </template>
+                </el-input>
+            </el-form-item>
+
+
+            <el-form-item label="主营业务：">
+                <font v-if="form.mainBusiness.visible===false">
+                    {{userInfo.mainBusiness}}
+                    <el-link type="primary" class="box-card-item-link" @click="editMainBusiness('show')">修改</el-link>
+                </font>
+                <el-input placeholder="请输入内容" ref="mainBusinessInput" v-model="form.mainBusiness.value"
+                          v-if="form.mainBusiness.visible" style="width:300px">
+                    <template slot="append">
+                        <el-button type="success" @click="editMainBusiness('save')">保存</el-button>
+                        <el-button type="info" @click="editMainBusiness('cancel')">取消</el-button>
+                    </template>
+                </el-input>
+            </el-form-item>
+
+        </el-form>
+    </el-card>
+
+
+    <el-dialog
+            title="修改密码"
+            :visible.sync="password.visible"
+            width="30%">
+        <el-form :model="password" label-position="left" :rules="rules" ref="passwordForm">
+            <el-form-item label="旧密码" label-width="100px" prop="old">
+                <el-input v-model="password.old" type="password"></el-input>
+            </el-form-item>
+            <el-form-item label="新密码" label-width="100px" prop="new1">
+                <el-input v-model="password.new1" type="password"></el-input>
+            </el-form-item>
+            <el-form-item label="确认新密码" label-width="100px" prop="new2">
+                <el-input v-model="password.new2" type="password"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="editPassword('cancel')">取 消</el-button>
+            <el-button type="primary" @click="editPassword('save')">确 定</el-button>
+        </span>
+    </el-dialog>
+
+
+    <el-dialog
+            title="验证邮箱"
+            :visible.sync="checkEmailVisible"
+            width="30%">
+        <el-form label-position="left" ref="checkEmailForm">
+            <el-form-item label="邮箱地址" label-width="100px">
+                <el-input dis v-model="userInfo.email" :disabled="true">
+                    <el-button @click.prevent="sendCheckEmail" slot="append" :disabled="sendCheckEmailBtnDisabled">
+                        {{sendCheckEmailBtnContent}}
+                    </el-button>
+                </el-input>
+            </el-form-item>
+            <el-form-item label="验证码" label-width="100px">
+                <el-input v-model="checkEmailCode"></el-input>
+            </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="checkEmail">确 定</el-button>
+        </span>
+    </el-dialog>
+
+</div>
+
+
+<th:block th:replace="common/common::common_Footer(~{::script})">
+    <script th:inline="javascript">
+
+        csrfHeaderName = [[${_csrf.headerName}]];
+        csrfToken = [[${_csrf.token}]];
+
+        var app = new Vue({
+            el: '#app',
+            data: function () {
+                var validatePass = (rule, value, callback) => {
+                    if (value === '') {
+                        callback(new Error('请输入新密码'));
+                    } else {
+                        if (this.password.new2 !== '') {
+                            this.$refs.passwordForm.validateField('checkPass');
+                        }
+                        callback();
+                    }
+                };
+                var validatePass2 = (rule, value, callback) => {
+                    if (value === '') {
+                        callback(new Error('请再次输入新密码'));
+                    } else if (value !== this.password.new1) {
+                        callback(new Error('两次输入密码不一致!'));
+                    } else {
+                        callback();
+                    }
+                };
+                return {
+                    userInfo: {
+                        userName: "",
+                        nickName: "",
+                        companyName: "",
+                        registerTime: "",
+                        city: "",
+                        address: "",
+                        email: "",
+                        industry: "",
+                        mainBusiness: "",
+                        emailChecked: "",
+                    },
+                    form: {
+                        nickName: {
+                            visible: false,
+                            value: "",
+                        },
+                        companyName: {
+                            visible: false,
+                            value: "",
+                        },
+                        city: {
+                            visible: false,
+                            value: "",
+                        },
+                        address: {
+                            visible: false,
+                            value: "",
+                        },
+                        email: {
+                            visible: false,
+                            value: "",
+                        },
+                        industry: {
+                            visible: false,
+                            value: "",
+                        },
+                        mainBusiness: {
+                            visible: false,
+                            value: "",
+                        },
+                    },
+                    password: {
+                        visible: false,
+                        old: "",
+                        new1: "",
+                        new2: "",
+                    },
+                    rules: {
+                        old: [{required: true, message: '请输入原密码', trigger: 'blur'}],
+                        new1: [
+                            {validator: validatePass, trigger: 'blur'}
+                        ],
+                        new2: [
+                            {validator: validatePass2, trigger: 'blur'}
+                        ],
+
+                    },
+                    checkEmailVisible: false,
+                    checkEmailCode: '',
+                    sendCheckEmailBtnDisabled: false,
+                    sendCheckEmailBtnTotal: 10,
+                    sendCheckEmailBtnContent: "发送验证码"
+                }
+            },
+            methods: {
+                getUserInfo(params){
+                    atutils.postJson("/userInfo/self", {}, {}, false, function (r) {
+                        var result = r.result;
+                        app.userInfo.nickName = result.nickName;
+                        app.userInfo.userName = result.userName;
+                        app.userInfo.companyName = result.companyName;
+                        app.userInfo.registerTime = result.registerTime;
+                        app.userInfo.city = result.city;
+                        app.userInfo.address = result.address;
+                        app.userInfo.email = result.email;
+                        app.userInfo.industry = result.industry;
+                        app.userInfo.mainBusiness = result.mainBusiness;
+                        app.userInfo.emailChecked = result.emailChecked;
+                    })
+                },
+                editPassword(commond){
+                    if (commond === "show") {
+                        //打开修改密码弹窗
+                        this.password.visible = true;
+                    } else if (commond === "cancel") {
+                        //取消
+                        this.password.visible = false;
+                    } else if (commond === "save") {
+                        //验证
+                        this.$refs['passwordForm'].validate((valid) => {
+                            if (valid) {
+                                //验证成功后提交表单
+                                atutils.postXform("/userInfo/editSelfPassword", this.password, {}, true, function (r) {
+                                    app.password.old = "";
+                                    app.password.new1 = "";
+                                    app.password.new2 = "";
+                                    app.password.visible = false;
+                                })
+                            } else {
+                                console.log('error submit!!');
+                                return false;
+                            }
+                        });
+                    }
+                },
+                editCompanyName(commond){
+                    if (commond === "show") {
+                        this.form.companyName.value = this.userInfo.companyName;
+                        this.form.companyName.visible = true;
+                        this.$nextTick(() => {
+                            this.$refs.companyNameInput.$refs.input.focus();
+                        })
+                    } else if (commond === "cancel") {
+                        this.form.companyName.value = "";
+                        this.form.companyName.visible = false;
+                    } else if (commond === "save") {
+                        //TODO 去后台保存
+                        this.postEdit('companyName');
+                    }
+                },
+                editIndustry(commond){
+                    if (commond === "show") {
+                        this.form.industry.value = this.userInfo.industry;
+                        this.form.industry.visible = true;
+                        this.$nextTick(() => {
+                            this.$refs.industryInput.$refs.input.focus();
+                        })
+                    } else if (commond === "cancel") {
+                        this.form.industry.value = "";
+                        this.form.industry.visible = false;
+                    } else if (commond === "save") {
+                        //TODO 去后台保存
+                        this.postEdit('industry');
+                    }
+                },
+                editMainBusiness(commond){
+                    if (commond === "show") {
+                        this.form.mainBusiness.value = this.userInfo.mainBusiness;
+                        this.form.mainBusiness.visible = true;
+                        this.$nextTick(() => {
+                            this.$refs.mainBusinessInput.$refs.input.focus();
+                        })
+                    } else if (commond === "cancel") {
+                        this.form.mainBusiness.value = "";
+                        this.form.mainBusiness.visible = false;
+                    } else if (commond === "save") {
+                        this.postEdit('mainBusiness');
+                    }
+                },
+                editNickName(commond){
+                    if (commond === "show") {
+                        this.form.nickName.value = this.userInfo.nickName;
+                        this.form.nickName.visible = true;
+                        this.$nextTick(() => {
+                            this.$refs.nickNameInput.$refs.input.focus();
+                        })
+                    } else if (commond === "cancel") {
+                        this.form.nickName.value = "";
+                        this.form.nickName.visible = false;
+                    } else if (commond === "save") {
+                        this.postEdit('nickName');
+                    }
+                },
+                editEmail(commond){
+                    if (commond === "show") {
+                        this.form.email.value = this.userInfo.email;
+                        this.form.email.visible = true;
+                        this.$nextTick(() => {
+                            this.$refs.emailInput.$refs.input.focus();
+                        })
+                    } else if (commond === "cancel") {
+                        this.form.email.value = "";
+                        this.form.email.visible = false;
+                    } else if (commond === "save") {
+                        this.postEdit('email');
+                    }
+                },
+                postEdit(key){
+                    //TODO 去后台保存
+                    atutils.postXform("/userInfo/editSelf", {
+                        key: key,
+                        value: app.form[key].value,
+                    }, {}, true, function (r) {
+                        app.userInfo[key] = app.form[key].value;
+                        app.form[key].visible = false;
+                        if (key === "nickName") {
+                            window.top.app.userInfo.nickName = app.form[key].value;
+                        }
+                    })
+                },
+                sendCheckEmail(){
+                    this.sendCheckEmailBtnDisabled = true;
+                    atutils.postXform("/userInfo/sendCheckEmail", {}, {}, true, function () {
+                        let clock = window.setInterval(() => {
+                            app.sendCheckEmailBtnTotal--;
+                            app.sendCheckEmailBtnContent = app.sendCheckEmailBtnTotal + 's后重新发送';
+                            if (app.sendCheckEmailBtnTotal <= 0) {     //当倒计时小于0时清除定时器
+                                window.clearInterval(clock)
+                                app.sendCheckEmailBtnContent = '重新发送验证码';
+                                app.sendCheckEmailBtnTotal = 10;
+                                app.sendCheckEmailBtnDisabled = false;
+                            }
+                        }, 1000)
+                    },function () {
+                        app.sendCheckEmailBtnDisabled = false;
+                    })
+                },
+                checkEmail(){
+                    atutils.postXform("/userInfo/checkEmailCode", {code:app.checkEmailCode}, {}, true, function () {
+                        app.userInfo.emailChecked = true;
+                        app.checkEmailVisible = false;
+                    })
+                },
+                showSelfClient(){
+                    const h = this.$createElement;
+                    //去查询该应用的oauth信息
+                    atutils.postXform("/userInfo/selfClient", {
+                    }, {}, false, function (r) {
+                        app.$msgbox({
+                            title: '应用详情',
+                            message: h('el-form', null, [
+                                h('el-form-item', {attrs: {label: 'client_id：'}}, r.result.clientId),
+                                h('el-form-item', {attrs: {label: 'client_secret：'}}, r.result.clientSecret)
+                            ]),
+                            showConfirmButton: false,
+                            showCancelButton: false,
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消',
+                        }).catch(action => {
+                            //点击关闭了
+                        });
+                    })
+                }
+            },
+            created: function () {
+                this.getUserInfo();
+            },
+            mounted: function () {
+
+            }
+        })
+    </script>
+</th:block>
+</body>
+
+
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+>
+
+<head th:replace="common/common::common_header(~{::title},~{})">
+    <title>合思达渠道支付平台</title>
+</head>
+
+<style>
+    .download-block {
+        cursor: pointer;
+    }
+</style>
+<body>
+
+<div id="app" v-cloak>
+
+    <el-row :gutter="10">
+        <el-col :span="16">
+            <el-card class="box-card">
+                <div slot="header">
+                    <span>接入指南</span>
+                </div>
+                <div class="box-card-item">
+                    <el-steps :active="3" simple>
+                        <el-step title="添加应用" icon="el-icon-edit"></el-step>
+                        <el-step title="获取诺诺授权" icon="el-icon-upload"></el-step>
+                        <el-step title="API调用" icon="el-icon-picture"></el-step>
+                    </el-steps>
+                </div>
+            </el-card>
+
+
+            <el-card class="box-card">
+                <div slot="header">
+                    <span>我的产品</span>
+                </div>
+                <div class="box-card-item">
+                    我的产品
+                </div>
+            </el-card>
+
+            <el-card class="box-card">
+                <div slot="header">
+                    <span>Api文档，SDK下载相关</span>
+                </div>
+                <div class="box-card-item">
+                    <el-row :gutter="20">
+                        <el-col :span="8" style="text-align: center">
+                            <el-link href="https://youaite-cloud.nos-eastchina1.126.net/invoice_platform_sdk.rar"
+                                     target="_blank" :underline="false">
+                                <el-avatar :size="80"> SDK</el-avatar>
+                                <p class="demonstration">SDK</p>
+                            </el-link>
+                        </el-col>
+                        <el-col :span="8" style="text-align: center">
+                            <el-link
+                                    href="https://youaite-cloud.nos-eastchina1.126.net/%E7%94%B5%E5%AD%90%E5%8F%91%E7%A5%A8%E5%BF%AB%E9%80%9F%E6%8E%A5%E5%85%A5.docx"
+                                    target="_blank" :underline="false">
+                                <el-avatar :size="80"> 接入</el-avatar>
+                                <p class="demonstration">接入文档</p>
+                            </el-link>
+                        </el-col>
+                        <el-col :span="8" style="text-align: center">
+                            <el-link
+                                    href="https://youaite-cloud.nos-eastchina1.126.net/%E5%8F%91%E7%A5%A8%E5%B9%B3%E5%8F%B0API%E6%96%87%E6%A1%A3V1.0.docx"
+                                    target="_blank" :underline="false">
+                                <el-avatar :size="80"> API</el-avatar>
+                                <p class="demonstration">API文档</p>
+                            </el-link>
+                        </el-col>
+                       <!--? <el-col :span="6" style="text-align: center">
+                            <el-link href="https://element.eleme.io" target="_blank" :underline="false">
+                                <el-avatar :size="80"> 手册</el-avatar>
+                                <p class="demonstration">操作手册</p>
+                            </el-link>
+                        </el-col>-->
+                    </el-row>
+
+                </div>
+            </el-card>
+
+            <el-card class="box-card">
+                <div slot="header">
+                    <span>统计</span>
+                </div>
+                <div class="box-card-item">
+                    统计
+                </div>
+            </el-card>
+
+        </el-col>
+        <el-col :span="8">
+
+            <el-card class="box-card">
+                <div class="box-card-item">
+                    <el-tabs v-model="noticeTab" @tab-click="switchNoticeTab" stretch>
+                        <el-tab-pane label="公告" name="1">
+                            <div v-for="(item, index) in noticeList" :index="index" :key="item.id">
+                                <el-link type="primary" @click="handleDetails(item)">{{item.title.length>20?item.title.slice(0, 200)+'...':item.title}}</el-link>
+                                <el-link type="info" disabled style="float:right;">{{item.createTime}}</el-link>
+                                <el-divider></el-divider>
+                            </div>
+                            <el-link type="primary" @click="handleReadMore">查看更多</el-link>
+                        </el-tab-pane>
+                        <el-tab-pane label="资讯" name="2">
+                            <div v-for="(item, index) in noticeList" :index="index" :key="item.id">
+                                <el-link type="primary" @click="handleDetails(item)">{{item.title.length>20?item.title.slice(0, 200)+'...':item.title}}</el-link>
+                                <el-link type="info" disabled style="float:right;">{{item.createTime}}</el-link>
+                                <el-divider></el-divider>
+                            </div>
+                            <el-link type="primary" @click="handleReadMore">查看更多</el-link>
+                        </el-tab-pane>
+                        <el-tab-pane label="其他" name="3">
+                            <div v-for="(item, index) in noticeList" :index="index" :key="item.id">
+                                <el-link type="primary" @click="handleDetails(item)">{{item.title.length>20?item.title.slice(0, 200)+'...':item.title}}</el-link>
+                                <el-link type="info" disabled style="float:right;">{{item.createTime}}</el-link>
+                                <el-divider></el-divider>
+                            </div>
+                            <el-link type="primary" @click="handleReadMore">查看更多</el-link>
+                        </el-tab-pane>
+                    </el-tabs>
+                </div>
+            </el-card>
+
+            <el-card class="box-card">
+                <div class="box-card-item">
+                    公告列表等
+                </div>
+            </el-card>
+        </el-col>
+    </el-row>
+
+
+</div>
+
+
+<th:block th:replace="common/common::common_Footer(~{::script})">
+    <script th:inline="javascript">
+        csrfHeaderName = [[${_csrf.headerName}]];
+        csrfToken = [[${_csrf.token}]];
+
+        var app = new Vue({
+            el: '#app',
+            data: function () {
+                return {
+                    noticeTab: '1',
+                    noticeList: [],
+                }
+            },
+            methods: {
+                switchNoticeTab(tab, event){
+                    this.getNoticeList(this.noticeTab);
+                },
+                getNoticeList(type){
+                    //到后台去取list
+                    params = {};
+                    params.search = {};
+                    params.search.noticeType = type;
+                    params.size = 5;
+                    params.page = 0;
+                    atutils.postXform('/notice/list', params, null, false, function (data) {
+                        app.noticeList = data.result.dataList;
+                    }, function () {
+                    });
+                },
+                handleDetails(item) {
+                    const h = this.$createElement;
+                    this.$msgbox({
+                        title: '详情',
+                        message: h('p', null, [
+                            h('h2', { style: 'width: 100%;text-align:center' }, item.title),
+                            h('p', { style: 'width: 100%;text-align:center;font-size:12px' }, item.createTime),
+                            h('p', { style: 'color: teal' }, item.content)
+                        ]),
+                        showConfirmButton:false,
+                        showCancelButton: false,
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消'
+                    }).catch(action => {
+                        //点击关闭了
+
+                    });
+                },
+                handleReadMore() {
+                    window.top.app.setsMenuHandler("goNoticeCenter");
+                }
+            },
+            created: function () {
+                this.getNoticeList(1);
+            },
+            mounted: function () {
+
+            }
+        })
+    </script>
+</th:block>
+</body>
+
+
+</html>

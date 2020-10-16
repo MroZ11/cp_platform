@@ -1,0 +1,73 @@
+/*body {
+    position: relative;
+    height: 100vh;
+    margin: 0px;
+    overflow: hidden;
+}*/
+
+body, html {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    font: 400 1em/1.8 'Microsoft Yahei', 'PingFang SC', 'Avenir', 'Segoe UI', 'Hiragino Sans GB', STHeiti, 'Microsoft Sans Serif', 'WenQuanYi Micro Hei', sans-serif;
+    font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
+}
+
+
+.el-header, .el-footer {
+    /*background-color: #B3C0D1;*/
+    background-color: rgb(64, 158, 255);
+    color: #333;
+    text-align: center;
+    line-height: 60px;
+}
+
+.el-aside {
+    background-color: #f1f1f1;
+    text-align: center;
+    line-height: 200px;
+    height: calc(100vh - 60px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    /*display-x: hidden; display-y: auto;*/
+}
+
+.el-main {
+    background-color: #E5E5E5;
+    color: #333;
+    text-align: center;
+    height: calc(100vh - 60px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-right: 0px;
+    padding-left: 10px;
+    padding-bottom: 10px;
+    padding-top: 0px !important;
+}
+
+/*.el-menu{
+    background-color: #f1f1f1;
+}*/
+
+.el-tabs__header{
+    margin-bottom: 0px;
+}
+
+.main-iframe{
+    width: 100%;
+    height: calc(100vh - 60px - 40px - 20px);
+    margin: 0 0 2px 0;
+}
+
+.main-iframe>iframe{
+    background-color: white;
+    border:0
+}
+
+.el-tabs__item.is-active{
+    border-bottom: 5px solid #409eff !important;
+}

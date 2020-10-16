@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+>
+
+<head th:replace="common/common::common_header(~{::title},~{})">
+    <title>合思达渠道支付平台</title>
+</head>
+
+<body>
+
+<div id="app" v-cloak>
+
+
+
+    <el-drawer
+            :title="drawerTitle"
+            :modal="false"
+            :visible.sync="drawerShow">
+        <el-form ref="form" :model="payChannelForm" label-width="120px">
+
+            <div v-if="payChannelForm.channelCode=='alipay'
+            ||payChannelForm.channelCode=='alipay_wap'
+            ||payChannelForm.channelCode=='alipay_facetoface'
+            ||payChannelForm.channelCode=='alipay_lite'
+            ||payChannelForm.channelCode=='alipay_pc_direct'">
+                <el-form-item label="支付宝App ID" prop="channelAppId" :rules="[{ required: true, message: '支付宝App ID', trigger: 'blur' }]">
+                    <el-input v-model="payChannelForm.channelAppId"></el-input>
+                </el-form-item>
+                <el-form-item label="支付宝公钥" prop="channelPublicKey" :rules="[{ required: true, message: '支付宝公钥', trigger: 'blur' }]">
+                    <el-input v-model="payChannelForm.channelPublicKey" type="textarea"></el-input>
+                </el-form-item>
+                <el-form-item label="支付宝私钥" prop="channelPrivateKey" :rules="[{ required: true, message: '支付宝私钥', trigger: 'blur' }]">
+                    <el-input v-model="payChannelForm.channelPrivateKey" type="textarea"></el-input>
+                </el-form-item>
+            </div>
+
+
+            <div v-if="payChannelForm.channelCode=='wx'
+            ||payChannelForm.channelCode=='wx_pub'
+            ||payChannelForm.channelCode=='wx_wap'
+            ||payChannelForm.channelCode=='wx_lite'">
+                <el-form-item label="微信App ID" prop="channelAppId" :rules="[{ required: true, message: '微信App ID', trigger: 'blur' }]">
+                    <el-input v-model="payChannelForm.channelAppId"></el-input>
+                </el-form-item>
+                <el-form-item label="微信商户号" prop="merchantNumber" :rules="[{ required: true, message: '微信商户号', trigger: 'blur' }]">
+                    <el-input v-model="payChannelForm.merchantNumber" ></el-input>
+                </el-form-item>
+                <el-form-item label="商户号key" prop="channelPrivateKey" :rules="[{ required: true, message: '商户号key', trigger: 'blur' }]">
+                    <el-input v-model="payChannelForm.channelPrivateKey" type="textarea"></el-input>
+                </el-form-item>
+                <el-form-item label="商户号key" prop="channelPrivateKey" :rules="[{ required: true, message: '商户号key', trigger: 'blur' }]">
+                    <el-input v-model="payChannelForm.channelPrivateKey" type="textarea"></el-input>
+                </el-form-item>
+                <!--<el-form-item label="p12证书" prop="wxP12File">
+                    <el-upload
+                            class="upload-demo"
+                            ref="upload"
+                            :action="uploadUrl()"
+                            name="excelFile"
+                            drag
+                            :data="upData"
+                            :file-list="fileList"
+                            :on-error="uploadFalse"
+                            :on-success="uploadSuccess"
+                            :auto-upload="false"
+                            :before-upload="beforeAvatarUpload">
+                        <i class="el-icon-upload"></i>
+                        <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
+                        &lt;!&ndash; <el-button slot="trigger" size="small" >选取文件</el-button> &ndash;&gt;
+                        <div slot="tip" class="el-upload__tip" style="color:red">上传文件只能是 xls、xlsx、txt 格式!</div>
+                    </el-upload>
+                </el-form-item>-->
+            </div>
+
+
+
+
+
+            <el-form-item>
+                <el-button type="primary" @click="savePayChannel">保存</el-button>
+                <el-button @click="drawerShow = false">取消</el-button>
+            </el-form-item>
+        </el-form>
+    </el-drawer>
+
+
+    <div class="queryDiv">
+
+        <el-form :inline="true" :model="query">
+            <el-form-item label="归属应用">
+                <el-select style="width: 180px" v-model="query.appId" placeholder="请选择" @change="appChange">
+                    <el-option
+                            v-for="item in selectOptions"
+                            :key="item.appId"
+                            :label="item.appName"
+                            :value="item.appId">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <!--<el-form-item>
+                <el-button type="primary">查询</el-button>
+            </el-form-item>-->
+        </el-form>
+    </div>
+
+    <!--<div class="opDiv">
+        <div class="left">
+            <el-button  type="success">新增</el-button>
+        </div>
+        <div class="right">
+            <el-button-group>
+                <el-button  icon="el-icon-refresh"></el-button>
+            </el-button-group>
+        </div>
+    </div>-->
+
+
+    <el-table class="table"
+              ref="tableData"
+              :data="tableData"
+              style="width: 100%;margin-top: 5px"
+              border
+              stripe
+              @current-change="handleDetails"
+              highlight-current-row
+              height="600">
+
+        <el-table-column
+                prop="channelName"
+                label="支付渠道名称">
+        </el-table-column>
+
+        <el-table-column
+                prop="scene"
+                label="场景">
+        </el-table-column>
+
+        <el-table-column
+                prop="statusDesc"
+                label="状态">
+            <div slot-scope="scope">
+                <el-tag size="medium" type="info" v-if="!scope.row.opened">未开通</el-tag>
+                <el-tag size="medium" type="success" v-if="scope.row.opened">已开通</el-tag>
+            </div>
+        </el-table-column>
+
+        <el-table-column label="操作">
+            <template slot-scope="scope">
+                <el-button
+                        size="mini"
+                        @click="handleDetails(scope.row)">配置
+                </el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+
+</div>
+
+
+<th:block th:replace="common/common::common_Footer(~{::script})">
+    <script th:inline="javascript">
+
+        csrfHeaderName = [[${_csrf.headerName}]];
+        csrfToken = [[${_csrf.token}]];
+
+        var app = new Vue({
+            el: '#app',
+            computed: {
+                dialogTitle() {
+                    return this.form.appId ? '修改' : '新增'
+                }
+            },
+            data: function () {
+                return {
+                    fullScreenLoading: true,
+                    dialogAddVisible: false,
+                    drawerShow:false,
+                    pager: {//分页条配置
+                        count: 0,
+                        size: 10,
+                        page: 1,
+                    },
+                    tableData: [],
+                    selectOptions: [],
+                    selectRows: [],
+                    query: {
+                        appId: null,
+                    },
+                    drawerTitle:'',
+                    payChannelForm: {
+                        id:null,
+                        appId: null,
+                        channelCode: '',
+                        merchantNumber:'',
+                        createTime: '',
+                        channelAppId: '',
+                        channelPublicKey: '',
+                        channelPrivateKey:'',
+                    },
+                    receiveOptions: [{
+                        value: 's',
+                        label: 's'
+                    }, {
+                        value: '2',
+                        label: '2'
+                    },
+                    ]
+                }
+            },
+            methods: {
+                appChange(r){
+                    app.getTableData();
+                },
+                getTableData(){
+                    if(app.query.appId){
+                        atutils.postXform('/user_app/'+app.query.appId+'/payChannel', null, null, false, function (data) {
+                            app.tableData=data.result
+                        }, function () {
+
+                        });
+                    }
+                },
+                getSelectOptions(params){
+                    //到后台去取list
+                    params = params || {};
+                    params.size = 99;
+                    params.page = 0;
+                    atutils.postXform('/user_app/self', params, null, false, function (data) {
+                        app.selectOptions = data.result.dataList;
+                        if(data.result&&data.result.dataList.length>0){
+                            app.query.appId = data.result.dataList[0].appId
+                            app.getTableData();
+                        }
+                    }, function () {
+                    });
+                },
+                handleDetails(row){
+                    app.payChannelForm.appId = row.appId
+                    app.payChannelForm.channelCode = row.channelCode
+                    app.drawerTitle = row.channelName
+                    //清空
+                    app.payChannelForm.id = null
+                    app.payChannelForm.merchantNumber = null
+                    app.payChannelForm.channelAppId = null
+                    app.payChannelForm.channelPublicKey = null
+                    app.payChannelForm.channelPrivateKey = null
+                    //去后台查询具体的
+                    atutils.postXform('/user_app/'+app.query.appId+'/payChannel', {channelCode:row.channelCode}, null, false, function (data) {
+                        if(data.result){
+                            app.payChannelForm.id = data.result.id
+                            app.payChannelForm.merchantNumber = data.result.merchantNumber
+                            app.payChannelForm.channelAppId = data.result.channelAppId
+                            app.payChannelForm.channelPublicKey = data.result.channelPublicKey
+                            app.payChannelForm.channelPrivateKey = data.result.channelPrivateKey
+                        }
+                        app.drawerShow=true
+                    }, function () {
+
+                    });
+                },
+                formatterContent(row, column){
+                    if (row.content.length > 20) {
+                        return row.content.substr(0, 20) + "...";
+                    } else {
+                        return row.content;
+                    }
+                },
+                uploadUrl(){
+
+                },
+                savePayChannel(){
+                    atutils.postJson('/appPayChannel/save',app.payChannelForm,null,true,function (data) {
+                        //刷新一下列表
+                        app.getTableData()
+                        app.drawerShow=false
+                    },function () {
+
+                    })
+                }
+            },
+            created: function () {
+                this.getSelectOptions();
+            },
+            mounted: function () {
+
+            }
+        })
+    </script>
+</th:block>
+</body>
+
+
+</html>

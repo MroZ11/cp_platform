@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+>
+
+<head th:replace="common/common::common_header(~{::title},~{})">
+    <title>合思达渠道支付平台</title>
+</head>
+
+<body>
+
+<div id="app" v-cloak>
+    <el-button @click="openDialogAddVisible" type="success">新增</el-button>
+    <el-dialog :title="dialogTitle" :visible.sync="dialogAddVisible">
+        <el-form ref="form" :model="form" label-width="120px">
+            <el-form-item label="应用名称" prop="appName" :rules="[{ required: true, message: '请输入名称', trigger: 'blur' }]">
+                <el-input v-model="form.appName" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+
+            <el-form-item label="异步通知地址" prop="notifyUrl">
+                <el-input placeholder="不填或填写错误将收不到异步推送" maxlength="50" show-word-limit v-model="form.notifyUrl"></el-input>
+            </el-form-item>
+
+            <el-form-item label="ip白名单" prop="ipWhiteList">
+                <el-input placeholder="不填时不会验证ip,多个ip请用逗号分隔" maxlength="50" show-word-limit type="textarea" v-model="form.ipWhiteList"></el-input>
+            </el-form-item>
+            <el-form-item label="应用描述" prop="notes">
+                <el-input maxlength="100" show-word-limit type="textarea" v-model="form.notes"></el-input>
+            </el-form-item>
+
+            <el-form-item>
+                <el-button type="primary" @click="handlerSave">保存</el-button>
+                <el-button @click="dialogAddVisible = false">取消</el-button>
+            </el-form-item>
+        </el-form>
+    </el-dialog>
+
+    <el-table class="table"
+              ref="tableData"
+              :data="tableData"
+              style="width: 100%;margin-top: 5px"
+              border
+              stripe
+              height="400"
+              @selection-change="handlerSelection"
+              @sort-change="handlerSortChange">
+        <el-table-column
+                type="selection"
+                width="55">
+        </el-table-column>
+
+
+        <el-table-column
+                prop="appName"
+                label="应用名称"
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="appId"
+                label="appId"
+                width="240">
+        </el-table-column>
+        <el-table-column
+                prop="createTime"
+                label="创建时间"
+                width="180">
+        </el-table-column>
+
+        <el-table-column label="操作">
+            <template slot-scope="scope">
+                <el-button
+                        size="mini"
+                        @click="handleDetails(scope.$index, scope.row)">修改
+                </el-button>
+                <el-button
+                        size="mini"
+                        type="danger"
+                        @click="handleDelete(scope.$index, scope.row)">删除
+                </el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <div class="block" style="margin-top: 10px">
+        <el-pagination
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+                :current-page.sync="pager.page"
+                :page-sizes="[10, 20, 50, 100]"
+                :page-size="pager.size"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="pager.count">
+        </el-pagination>
+    </div>
+</div>
+
+
+<th:block th:replace="common/common::common_Footer(~{::script})">
+    <script th:inline="javascript">
+
+        csrfHeaderName = [[${_csrf.headerName}]];
+        csrfToken = [[${_csrf.token}]];
+
+        var app = new Vue({
+            el: '#app',
+            computed: {
+                dialogTitle() {
+                    return this.form.appId ?'修改':'新增'
+                }
+            },
+            data: function () {
+                return {
+                    fullScreenLoading: true,
+                    dialogAddVisible: false,
+                    pager: {//分页条配置
+                        count: 0,
+                        size: 10,
+                        page: 1,
+                    },
+                    tableData: [],
+                    selectRows: [],
+                    form: {
+                        appId: null,
+                        appName: '',
+                        notes: '',
+                        ipWhiteList: '',
+                        notifyUrl: ''
+                    },
+                    receiveOptions: [{
+                        value: 's',
+                        label: 's'
+                    }, {
+                        value: '2',
+                        label: '2'
+                    },
+                    ]
+                }
+            },
+            methods: {
+                getTableList(params){
+                    //到后台去取list
+                    params = params || {};
+                    params.count = this.pager.count;
+                    params.size = this.pager.size;
+                    params.page = this.pager.page - 1;
+                    atutils.postXform('/user_app/self', params, null, false, function (data) {
+                        app.tableData = data.result.dataList;
+                        app.pager.count = data.result.count;
+                        app.pager.page = data.result.page + 1;
+                        app.pager.size = data.result.size;
+                    }, function () {
+
+                    });
+                },
+                handlerSelection(selection){
+                    this.selectRows = selection;
+                },
+                handleDetails(index, row) {
+                    this.form.appId = row.appId
+                    this.form.appName = row.appName
+                    this.form.notes = row.notes
+                    this.form.ipWhiteList = row.ipWhiteList
+                    this.form.notifyUrl = row.notifyUrl
+                    this.dialogAddVisible = true;
+                },
+                handleSend(index, row){
+                    atutils.postXform('/msg/send', {id: row.id}, null, true, function (data) {
+                        app.getTableList();
+                    });
+                },
+                handleDelete(index, row) {
+                    //弹出确认框
+                    var ids = [];
+                    ids[0] = row.id;
+                    //确认删除
+                    this.$confirm('此操作将永久删除该应用, 是否继续?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        //到后台去取list
+                        atutils.postJson('/user_app/delete', ids, null, true, function (data) {
+                            app.getTableList();
+                        });
+                    }).catch(() => {
+                        //取消
+
+                    });
+                },
+                handlerSortChange(sort){
+                    //排序字段改变
+                    var params = {};
+                    params.orderProp = sort.prop;
+                    params.orderDirection = sort.order;
+                    this.getTableList(params);
+                },
+                handleCurrentChange(currentPage){
+                    //改变页码触发
+                    this.pager.page = currentPage;
+                    this.getTableList();
+                },
+                handleSizeChange(pageSize){
+                    console.log(pageSize);
+                    this.pager.size = pageSize;
+                    this.getTableList();
+                },
+                handlerSave(){
+                    this.$refs['form'].validate((valid) => {
+                        if (valid) {
+                            //验证成功后提交表单
+                            this.dialogAddVisible = false;
+                            let url = this.form.appId ? "/user_app/edit" : "/user_app/add"
+                            atutils.postJson(url, this.form, {}, true, function (r) {
+                                app.getTableList();
+                            })
+                        } else {
+                            return false;
+                        }
+                    });
+                },
+                handleTestSandBox(index, row){
+                    //弹窗输入手机号码
+                    this.$prompt('请输入手机号码', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        inputPattern: /(?:0|86|\+86)?1[3456789]\d{9}/,
+                        inputErrorMessage: '手机号码格式不正确'
+                    }).then(({value}) => {
+                        atutils.postXform('/invoice/test_sandbox', {
+                            userAppId: row.id,
+                            testPhone: value
+                        }, null, true, function (data) {
+                            app.getTableList();
+                        });
+                    }).catch(() => {
+
+                    });
+
+
+                },
+                handleNnAuthorization(index, row){
+                    //TODO 这里写死 实际应改到后台取地址
+                    //const redirect_uri = "http://127.0.0.1:8052/user_app/acceptCode/" + row.id;//这个地址用来接收授权码 并取获取token
+                    const redirect_uri = "http://invoice.yatiot.com/user_app/acceptCode";//这个地址用来接收授权码 并取获取token
+                    if (row.environment == 1) {
+                        //正式
+                        window.open("https://open.nuonuo.com/authorize?state=" + row.id + "&response_type=code&redirect_uri=" + redirect_uri + "&appKey=y8gRF7d4", '', 'width=800,height=600');
+                    } else {
+                        //沙箱
+                        window.open("https://open.nuonuo.com/authorize?state=" + row.id + "&response_type=code&redirect_uri=" + redirect_uri + "&appKey=SDy8gRF7d4", '', 'width=800,height=600');
+                    }
+                },
+                openDialogAddVisible(){
+                    this.form.appId = null
+                    this.form.appName = ''
+                    this.form.notes = ''
+                    this.form.ipWhiteList = ''
+                    this.form.notifyUrl = ''
+                    this.dialogAddVisible = true;
+                },
+                setReadFlag(id, shwoTip = true){
+                    var ids = [];
+                    if (id) {
+                        ids[0] = id;
+                    } else {
+                        const selectRows = this.selectRows;
+                        if (selectRows.length < 1) {
+                            this.$message.error('请勾选项目');
+                            return;
+                        }
+                        var q = selectRows.map((row) => {
+                            return row.id;
+                        });
+
+                    }
+                    atutils.postJson('/msg/setRead', ids, null, shwoTip, function (data) {
+                        app.getTableList();
+                    });
+                },
+                formatterContent(row, column){
+                    if (row.content.length > 20) {
+                        return row.content.substr(0, 20) + "...";
+                    } else {
+                        return row.content;
+                    }
+                },
+            },
+            created: function () {
+                this.getTableList();
+            },
+            mounted: function () {
+
+            }
+        })
+    </script>
+</th:block>
+</body>
+
+
+</html>

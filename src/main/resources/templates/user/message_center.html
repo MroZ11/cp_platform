@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+>
+
+<head th:replace="common/common::common_header(~{::title},~{})">
+    <title>合思达渠道支付平台</title>
+</head>
+
+<body>
+
+<div id="app" v-cloak>
+    <div style="margin-bottom: 8px">
+        <el-radio-group v-model="radio" @change="radioChange">
+            <!--?<el-radio-button label="all">全部</el-radio-button>-->
+            <el-radio-button label="receive">我收到的</el-radio-button>
+            <el-radio-button label="send">我发送的</el-radio-button>
+        </el-radio-group>
+    </div>
+
+    <el-button v-if="radio === 'receive'" @click="setReadFlag()">置为已读</el-button>
+    <el-button v-if="radio === 'send'" @click="openDialogAddVisible">新建消息</el-button>
+    <el-button @click="deleteAll" type="danger">批量删除</el-button>
+    <el-dialog title="新建消息" :visible.sync="dialogAddVisible">
+        <el-form ref="form" :model="form" label-width="80px">
+            <el-form-item label="标题" prop="title" :rules="[{ required: true, message: '请输入标题', trigger: 'blur' }]">
+                <el-input v-model="form.title" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+            <el-form-item label="接收人" prop="receiveUsername" :rules="[{ required: true, message: '请选择接收人', trigger: 'change' }]">
+                <el-select v-model="form.receiveUsername"  placeholder="请选择接收人">
+                    <el-option
+                            v-for="item in receiveOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="消息内容" prop="content" :rules="[{ required: true, message: '请输入消息内容', trigger: 'blur' }]">
+                <el-input maxlength="500" show-word-limit type="textarea" v-model="form.content"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="handlerAdd">立即创建</el-button>
+                <el-button @click="dialogAddVisible = false">取消</el-button>
+            </el-form-item>
+        </el-form>
+    </el-dialog>
+
+    <el-table class="table"
+              ref="tableData"
+              :data="tableData"
+              style="width: 100%;margin-top: 5px"
+              border
+              stripe
+              height="400"
+              @selection-change="handlerSelection"
+              @sort-change="handlerSortChange">
+        <el-table-column
+                type="selection"
+                width="55">
+        </el-table-column>
+        <el-table-column
+                v-if="radio === 'receive'"
+                prop="sendUsername"
+                label="发送人"
+                sortable="custom"
+                width="180">
+        </el-table-column>
+
+        <el-table-column
+                v-if="radio === 'send'"
+                prop="receiveUsername"
+                label="接收人"
+                sortable="custom"
+                width="180">
+        </el-table-column>
+
+        <el-table-column
+                prop="createTime"
+                label="创建时间"
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="sendTime"
+                label="发送时间"
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="title"
+                label="标题"
+                width="180">
+        </el-table-column>
+        <el-table-column
+                prop="content"
+                label="内容"
+                width="180"
+                :formatter="formatterContent">
+        </el-table-column>
+        <el-table-column
+                prop="isread"
+                label="已读状态"
+                v-if="radio === 'receive'"
+                sortable="custom"
+        >
+            <template slot-scope="scope">
+                <el-tag
+                        :type="scope.row.isread === 1 ? 'success' : 'danger'"
+                        disable-transitions>{{scope.row.isread === 1 ? '已读' : '未读'}}
+                </el-tag>
+            </template>
+        </el-table-column>
+
+        <el-table-column label="操作">
+            <template slot-scope="scope">
+                <el-button v-if="radio === 'send' "
+                        size="mini"
+                        @click="handleSend(scope.$index, scope.row)">重发
+                </el-button>
+                <el-button
+                        size="mini"
+                        @click="handleDetails(scope.$index, scope.row)">查看
+                </el-button>
+                <el-button
+                        size="mini"
+                        type="danger"
+                        @click="handleDelete(scope.$index, scope.row)">删除
+                </el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <div class="block" style="margin-top: 10px">
+        <el-pagination
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+                :current-page.sync="pager.page"
+                :page-sizes="[10, 20, 50, 100]"
+                :page-size="pager.size"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="pager.count">
+        </el-pagination>
+    </div>
+</div>
+
+
+<th:block th:replace="common/common::common_Footer(~{::script})">
+    <script th:inline="javascript">
+
+        csrfHeaderName = [[${_csrf.headerName}]];
+        csrfToken = [[${_csrf.token}]];
+
+        var app = new Vue({
+            el: '#app',
+            data: function () {
+                return {
+                    fullScreenLoading: true,
+                    dialogAddVisible: false,
+                    pager: {//分页条配置
+                        count: 0,
+                        size: 10,
+                        page: 1,
+                    },
+                    tableData: [],
+                    selectRows: [],
+                    radio: 'receive',
+                    form: {
+                        title: '',
+                        content: '',
+                        receiveUsername: '',
+                    },
+                    receiveOptions: [{
+                        value: 's',
+                        label: 's'
+                    }, {
+                        value: '2',
+                        label: '2'
+                    },
+                    ]
+                }
+            },
+            methods: {
+                getTableList(params){
+                    /*const  loadingInstance = this.$loading({ target: '.table'});*/
+                    //到后台去取list
+                    params = params || {};
+                    params.receiveOrSend = this.radio;
+                    params.count = this.pager.count;
+                    params.size = this.pager.size;
+                    params.page = this.pager.page - 1;
+                    atutils.postXform('/msg/list', params, null, false, function (data) {
+                        app.tableData = data.result.dataList;
+                        app.pager.count = data.result.count;
+                        app.pager.page = data.result.page + 1;
+                        app.pager.size = data.result.size;
+                        /*loadingInstance.close();*/
+                    }, function () {
+                        /*loadingInstance.close();*/
+                    });
+
+                },
+                radioChange(){
+                    this.getTableList();
+                },
+                handlerSelection(selection){
+                    this.selectRows = selection;
+                },
+                handleDetails(index, row) {
+                    const h = this.$createElement;
+                    this.$msgbox({
+                        title: '详情',
+                        message: h('p', null, [
+                            h('h2', { style: 'width: 100%;text-align:center' }, row.title),
+                            h('p', { style: 'width: 100%;text-align:center;font-size:12px' }, row.createTime),
+                            h('p', { style: 'color: teal' }, row.content)
+                        ]),
+                        showConfirmButton:false,
+                        showCancelButton: false,
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        beforeClose: (action, instance, done) => {
+                            //关闭前设置该消息已读
+                            if(row.isread!=1){
+                                app.setReadFlag(row.id,false)
+                            }
+                            done();
+                        }
+                    }).catch(action => {
+                        //点击关闭了
+
+                    });
+                },
+                handleSend(index, row){
+                    atutils.postXform('/msg/send', {id:row.id}, null, true, function (data) {
+                        app.getTableList();
+                    });
+                },
+                handleDelete(index, row) {
+                    //弹出确认框
+                    var ids = [];
+                    ids[0] = row.id;
+                    //确认删除
+                    this.$confirm('此操作将永久删除, 是否继续?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        //到后台去取list
+                        atutils.postJson('/msg/delete', ids, null, true, function (data) {
+                            app.getTableList();
+                        });
+                    }).catch(() => {
+                        //取消
+
+                    });
+                },
+                handlerSortChange(sort){
+                    //排序字段改变
+                    var params = {};
+                    params.orderProp = sort.prop;
+                    params.orderDirection = sort.order;
+                    this.getTableList(params);
+                },
+                handleCurrentChange(currentPage){
+                    //改变页码触发
+                    this.pager.page = currentPage;
+                    this.getTableList();
+                },
+                handleSizeChange(pageSize){
+                    console.log(pageSize);
+                    this.pager.size = pageSize;
+                    this.getTableList();
+                },
+                deleteAll(){
+                    var selectRows = this.selectRows;
+                    if (selectRows.length < 1) {
+                        this.$message.error('请勾选删除项');
+                        return;
+                    }
+                    var ids = selectRows.map((row) => {
+                        return row.id;
+                    });
+                    //确认删除
+                    this.$confirm('确认删除, 是否继续?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        atutils.postJson('/msg/delete', ids, null, true, function (data) {
+                            app.getTableList();
+                        });
+                    }).catch(() => {
+                        //取消
+                    });
+                },
+                handlerAdd(){
+                    this.$refs['form'].validate((valid) => {
+                        if (valid) {
+                            //验证成功后提交表单
+                            this.dialogAddVisible = false;
+                            atutils.postJson("/msg/add",this.form,{},true,function (r) {
+                                app.getTableList();
+                            })
+                        } else {
+                            console.log('error submit!!');
+                            return false;
+                        }
+                    });
+                },
+                openDialogAddVisible(){
+                    //加载权限树
+                    this.dialogAddVisible = true;
+                },
+                setReadFlag(id,shwoTip=true){
+                    var ids = [];
+                    if(id){
+                        ids[0] = id;
+                    }else{
+                        const selectRows = this.selectRows;
+                        if (selectRows.length < 1) {
+                            this.$message.error('请勾选项目');
+                            return;
+                        }
+                        var q = selectRows.map((row) => {
+                            return row.id;
+                        });
+
+                    }
+                    atutils.postJson('/msg/setRead', ids, null, shwoTip, function (data) {
+                        app.getTableList();
+                    });
+                },
+                formatterContent(row, column){
+                    if(row.content.length>20){
+                        return row.content.substr(0,20)+"...";
+                    }else {
+                        return row.content;
+                    }
+                },
+            },
+            created: function () {
+                this.getTableList();
+            },
+            mounted: function () {
+
+            }
+        })
+    </script>
+</th:block>
+</body>
+
+
+</html>

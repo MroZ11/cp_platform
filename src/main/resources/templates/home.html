@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+>
+
+<head th:replace="common/common::common_header(~{::title},~{::link})">
+    <title>合思达渠道支付平台</title>
+    <link rel="stylesheet" th:href="@{/static/css/home.css}">
+</head>
+
+<body>
+
+<div id="app" v-cloak @click="labelMenu.visible = false" >
+    <el-container style="height: 300px;">
+
+        <el-header style="text-align: right; font-size: 14px">
+            <div th:style=" |width:160px;float: left;background-image: url(@{/static/ico/logo-white.png});background-size:160px 60px;background-repeat:none|">
+                <el-link href="/" :underline="false" style="width:160px;">&nbsp</el-link>
+            </div>
+            <el-dropdown @command="setsMenuHandler">
+                <el-button icon="el-icon-setting" circle ></el-button>
+                <el-dropdown-menu slot="dropdown">
+                    <el-dropdown-item command="goUserCenter" icon="el-icon-user-solid">个人中心</el-dropdown-item>
+                    <el-dropdown-item command="goMsgCenter" icon="el-icon-s-comment">
+                        消息中心
+                        <!--?<el-badge :value="12" class="item">
+                            消息中心
+                        </el-badge>-->
+                    </el-dropdown-item>
+                    <el-dropdown-item command="goNoticeCenter" icon="el-icon-message-solid">公告中心</el-dropdown-item>
+                    <el-dropdown-item command="logOut" icon="el-icon-caret-left">退出登录</el-dropdown-item>
+                </el-dropdown-menu>
+            </el-dropdown>
+            <span style="color: white">{{userInfo.nickName}}</span>
+        </el-header>
+
+
+        <el-container>
+            <el-aside class="el-scrollbar" width="200px">
+                <el-menu background-color="#f1f1f1" :unique-opened="true">
+                    <el-submenu v-for="(item, index) in menu.children" :index="item.id" :key="item.id">
+                        <template slot="title"><i class="el-icon-s-grid"></i>{{item.name}}</template>
+                            <el-menu-item v-for=" (item2,index2)  in item.children" :index="item2.id" :key="item2.id"
+                                          @click="addTab(item2.id,item2.name,item2.moduleInfo.moduleUrl)">
+                                {{item2.name}}
+                            </el-menu-item>
+                    </el-submenu>
+
+                </el-menu>
+
+            </el-aside>
+
+
+
+            <el-main class="el-scrollbar">
+                <el-tabs v-model="editableTabsValue" type="card" @tab-remove="removeTab">
+                    <el-tab-pane
+                            v-for="(item, index) in editableTabs"
+                            :key="item.name"
+                            :label="item.title"
+                            :name="item.name"
+                            :closable="item.closable">
+
+                        <span slot="label" @contextmenu.prevent="showMenu(item,index,$event)"><i class="el-icon-date" style="padding-right: 2px"></i>{{item.title}}</span>
+
+                        <template>
+                            <div class="main-iframe" >
+                                <!--?通过在子页面 v-loaing 可以控制加载loading状态-->
+                                <iframe  :src="item.href" class="main-iframe" width="100%" height="100%"></iframe>
+                            </div>
+                        </template>
+
+                    </el-tab-pane>
+                </el-tabs>
+            </el-main>
+
+
+            <el-card class="box-card" v-if="labelMenu.visible" :style="{width:'120px',zIndex:100,position:'absolute',top:labelMenu.top ,left :labelMenu.left}">
+                <el-row>
+                    <el-col :span="24">
+                        <el-button type="text"  @click="freshCurrent"><i class="el-icon-refresh-right"></i>&nbsp;刷新当前</el-button>
+                    </el-col>
+                    <el-col :span="24">
+                        <el-button type="text"  @click="closeCurrent"><i class="el-icon-close"></i>&nbsp;关闭当前</el-button>
+                    </el-col>
+                    <el-col :span="24">
+                        <el-button type="text" @click="closeOther"><i class="el-icon-close"></i>&nbsp;关闭其他</el-button>
+                    </el-col>
+                    <el-col :span="24">
+                        <el-button type="text"  @click="closeAll"><i class="el-icon-close"></i>&nbsp;关闭全部</el-button>
+                    </el-col>
+                </el-row>
+            </el-card>
+
+        </el-container>
+    </el-container>
+</div>
+
+
+<th:block th:replace="common/common::common_Footer(~{::script})">
+
+
+    <script th:inline="javascript">
+        csrfHeaderName = [[${_csrf.headerName}]];
+        csrfToken = [[${_csrf.token}]];
+        var username  =  [[${session.SPRING_SECURITY_CONTEXT.authentication.principal.username}]];
+
+        var app = new Vue({
+            el: '#app',
+            data: function () {
+                const nickName = [[${nickName}]];
+                return {
+                    editableTabsValue: '1',
+                    editableTabs: [{
+                        title: '主页',
+                        name: '1',
+                        content: '主页内容',
+                        closable: false,
+                        href: '/board'
+                    }],
+                    userInfo: {
+                      nickName:[[${nickName}]],
+                    },
+                    tabIndex: 1,
+                    menu: {},
+                    stompClient:null,
+                    labelMenu:{
+                        nowIndex:0,
+                        visible:false,
+                        top:'0px',
+                        left:'0px',
+                    }
+                }
+            },
+            methods: {
+                getModuleTree(){
+                    //加载角色菜单树
+                    atutils.postJson('/user/moduleTree', {}, null, false, function (data) {
+                        app.menu = data.result;
+                    });
+                },
+                addTab(targetName, title, href) {
+                    //是否也存在 已存在显示 即可
+                    var exit = false;
+                    let tabs = this.editableTabs;
+                    tabs.forEach((tab, index) => {
+                        if (tab.name === targetName) {
+                            exit = true;
+                        }
+                    });
+
+                    if (!exit) {
+                        let newTabName = targetName;
+                        //找到menu中的 id = newTabName 的菜单
+                        this.editableTabs.push({
+                            title: title,
+                            name: newTabName,
+                            closable: true,
+                            href: href
+                        });
+                        this.editableTabsValue = newTabName;
+                    } else {
+                        this.editableTabsValue = targetName;
+                    }
+                },
+                removeTab(targetName) {
+                    if (targetName == 1) {
+                        return;
+                    }
+                    let tabs = this.editableTabs;
+                    let activeName = this.editableTabsValue;
+                    if (activeName === targetName) {
+                        tabs.forEach((tab, index) => {
+                            if (tab.name === targetName) {
+                                let nextTab = tabs[index + 1] || tabs[index - 1];
+                                if (nextTab) {
+                                    activeName = nextTab.name;
+                                }
+                            }
+                        });
+                    }
+                    this.editableTabsValue = activeName;
+                    this.editableTabs = tabs.filter(tab => tab.name !== targetName);
+                },
+                setsMenuHandler(command){
+                    if (command === 'goUserCenter') {
+                        //TODO
+                        this.addTab("个人中心","个人中心","/user/user_center")
+                    } else if (command === 'logOut') {
+                        window.location.href = "/login/index?out"
+                    }else if(command === 'goMsgCenter'){
+                        this.addTab("消息中心","消息中心","/user/message_center")
+                    }else if(command === 'goNoticeCenter'){
+                        this.addTab("公告中心","公告中心","/user/notice_center")
+                    }
+                },
+                showMenu(item,index,event){
+                    this.labelMenu.nowIndex = index;
+                    this.labelMenu.left = event.pageX+"px";
+                    this.labelMenu.top = event.pageY+"px";
+                    this.labelMenu.visible = true;
+                },
+                freshCurrent(item,index,event){
+                    //刷新当前
+                    var index =  this.labelMenu.nowIndex;
+                    var currentFrame = window.frames[index];
+                    currentFrame.location.reload();
+                },
+                closeCurrent(item,index,event){
+                    //删除当前
+                    var index =  this.labelMenu.nowIndex;
+                    if(index!=0){
+                        this.removeTab(this.editableTabs[index].name)
+                    }
+                },
+                closeOther(item,index,event){
+                    //删除首页外和当前index的所有
+                    var index =  this.labelMenu.nowIndex;
+                    let tabs = this.editableTabs;
+                    tabs.forEach((tab, i) => {
+                        if (tab.name !=tabs[index].name&& i!=0) {
+                            app.removeTab(tab.name)
+                        }
+                    });
+                },
+                closeAll(item,index,event){
+                    //删除首页外的所有
+                    var index =  this.labelMenu.nowIndex;
+                    let tabs = this.editableTabs;
+                    tabs.forEach((tab, i) => {
+                        if (i!=0) {
+                            app.removeTab(tab.name)
+                        }
+                    });
+                },
+
+                connectWebSocket() {
+                    //建立websocket
+                    var socket = new SockJS('/websocket');
+                    this.stompClient = Stomp.over(socket);
+                    this.stompClient.connect({},function (r) {
+                        //订阅共有主题notice
+                        app.stompClient.subscribe('/notice',function (r) {
+                            //处理消息
+                            var msg = r.body;
+                            app.$message.info(msg);
+                        })
+                        //订阅私有主题
+                        const h = app.$createElement;
+
+                        app.stompClient.subscribe("/user/"+username+"/message", function (r) {
+                            var msg = JSON.parse(r.body);
+                            var goMessageCenter = function () {
+                                app.setsMenuHandler("goMsgCenter");
+                                app.$notify.closeAll();
+                            }
+                            app.$notify.info({
+                                title: "有一条来自"+msg.sendUserName+"新消息",
+                                message: h('p', null, [
+                                    h('p', { style: 'color: teal'},msg.title),
+                                    h('el-button', {
+                                        attrs: {
+                                            type: 'text'
+                                        },
+                                        on:{
+                                            '!click':goMessageCenter
+                                        }
+                                    },"查看更多...")
+                                ]),
+                            });
+
+                        });
+                    })
+                }
+            },
+            created: function () {
+                this.getModuleTree();
+            },
+            mounted:function () {
+                this.connectWebSocket();
+            }
+        })
+
+
+    </script>
+</th:block>
+</body>
+
+
+</html>

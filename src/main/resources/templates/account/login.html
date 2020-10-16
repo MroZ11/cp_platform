@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+>
+
+<head th:replace="common/common::common_header(~{::title},~{::link})">
+    <title>合思达渠道支付平台-请登陆</title>
+    <link rel="stylesheet" th:href="@{/static/css/login.css}">
+</head>
+
+<body>
+
+<div id="app" v-cloak>
+    <el-container>
+
+        <el-header>
+            <el-row>
+                <el-col :span="2" :offset="5">
+                    <el-image src="../static/ico/logo-medium.png" fit="fill" style="height: 40px;margin-top: 50px"></el-image>
+
+                </el-col>
+
+                <el-col :span="5" >
+                <h1 style="display: inline-block;line-height: 40px;margin-top: 50px">电子发票云平台</h1>
+                </el-col>
+
+                <el-col :offset="6" :span="6" style="margin-top: 70px">
+                    <el-tooltip placement="top">
+                        <div slot="content">操作过程中遇到问题，联系我们!</div>
+                        <el-link icon="el-icon-phone-outline" type="primary">400-6266-096</el-link>
+                    </el-tooltip>
+                </el-col>
+            </el-row>
+        </el-header>
+
+        <el-main>
+            <el-card class="box-card" style="z-index:200">
+                <div slot="header" class="clearfix">
+                    <span>系统登录</span>
+                    <el-button style="float: right; padding: 3px 0" type="text" @click="regist()">注册</el-button>
+                </div>
+                <div class="text item">
+                    <el-form ref="form" :model="form" label-width="80px">
+                        <el-form-item label="_csrf" class="el-hidden">
+                            <el-input v-model="form._csrf"></el-input>
+                        </el-form-item>
+                        <el-form-item label="_csrf_header" class="el-hidden">
+                            <el-input v-model="form._csrf_header"></el-input>
+                        </el-form-item>
+                        <el-form-item label="用户名" prop="username" :rules="rules.username">
+                            <el-input v-model="form.username"></el-input>
+                        </el-form-item>
+                        <el-form-item label="密码" prop="password" :rules="rules.password">
+                            <el-input v-model="form.password" type="password"></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="onSubmit()">登录</el-button>
+                        </el-form-item>
+                    </el-form>
+                </div>
+            </el-card>
+        </el-main>
+
+        <el-footer>
+            <p>Copyright © 2018&nbsp<el-link href="//www.yatiot.com" :underline="false" type="primary">优艾特仪表科技成都有限公司</el-link></p>
+        </el-footer>
+
+    </el-container>
+</div>
+
+
+<th:block th:replace="common/common::common_Footer(~{::script})">
+    <script th:inline="javascript">
+
+        var app = new Vue({
+            el: '#app',
+            data: function () {
+                var validateLoginError = (rule, value, callback) => {
+                    if (this.form.validate_login_error != '') {
+                        callback(new Error(this.form.validate_login_error));
+                        this.form.validate_login_error = '';
+                    } else {
+                        callback();
+                    }
+                };
+                return {
+                    form: {
+                        username: '',
+                        password: '',
+                        _csrf: [[${_csrf.token}]],
+                        _csrf_header: [[${_csrf.headerName}]],
+                        validate_login_error: ''
+                    },
+                    rules: {
+                        username: [
+                            {required: true, message: '请输入用户名', trigger: 'blur'},
+                            {validator: validateLoginError, trigger: 'blur'}
+                        ],
+                        password: [
+                            {required: true, message: '请输入密码', trigger: 'blur'},
+                        ]
+                    },
+                }
+            },
+            methods: {
+                onSubmit: function () {
+                    //提交表单
+                    this.form.validate_login_error = '';
+                    this.$refs['form'].validate((valid) => {
+                        if (valid) {
+                            //成功后提交表单
+                            axios.post('/login', this.form, {
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                transformRequest: [function (data) {
+                                    let ret = ''
+                                    for (let it in data) {
+                                        ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
+                                    }
+                                    return ret
+                                }],
+                            }).then(function (response) {
+                                var data = response.data;
+                                if (data.succeed) {
+                                    //成功后跳转页面
+                                    window.location.href = "/";
+                                } else {
+                                    //不成功提示错误消息
+                                    app.form.validate_login_error = data.describe;
+                                    app.$refs['form'].validateField("username");
+                                }
+                            }).catch(function (error) {
+                                console.log(error);
+                            });
+                        } else {
+                            console.log('error submit!!');
+                            return false;
+                        }
+                    });
+                },
+                regist: function () {
+                    window.location.href = "/account/regist";
+                }
+            },
+            created: function () {
+                //如果不是顶级 跳到顶级登陆
+                if (window.top != null && window.top.document.URL != document.URL) {
+                    window.top.location = document.URL;
+                }
+
+            }
+        })
+    </script>
+</th:block>
+</body>
+
+
+</html>

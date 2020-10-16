@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html
+        xmlns:th="http://www.thymeleaf.org"
+>
+
+<head th:replace="common/common::common_header(~{::title},~{})">
+    <title>合思达渠道支付平台</title>
+
+</head>
+
+<body>
+
+<div id="app" v-cloak>
+    <el-tree
+            :data="menu"
+            node-key="id"
+            default-expand-all
+            :expand-on-click-node="false">
+      <span class="custom-tree-node" slot-scope="{ node, data }">
+        <span>{{ data.name }}</span>
+        <span>
+          <el-button v-if="!data.moduleInfo||data.moduleInfo.parent==0"
+                     type="text"
+                     size="mini"
+                     @click="() => showDialogAdd(data)">
+            增加
+          </el-button>
+          <el-button v-if="data.id!=0"
+                     type="text"
+                     size="mini"
+                     @click="() => showDialogEdit(node,data)">
+            修改
+          </el-button>
+          <el-button
+                  type="text"
+                  size="mini"
+                  @click="() => remove(node, data)">
+            删除
+          </el-button>
+        </span>
+      </span>
+    </el-tree>
+
+
+    <el-dialog :title="dialogTitle" :visible.sync="dialogAddVisible">
+        <el-form ref="form" :model="form" label-width="80px">
+
+            <el-form-item label="父菜单" prop="parentName"
+                          :rules="[{ required: true, message: '请输入父菜单', trigger: 'blur' }]">
+                <el-input v-model="form.parentName" :disabled="true"></el-input>
+            </el-form-item>
+
+            <el-form-item label="菜单名称" prop="moduleName"
+                          :rules="[{ required: true, message: '请输入菜单名称', trigger: 'blur' }]">
+                <el-input v-model="form.moduleName" maxlength="50" show-word-limit></el-input>
+            </el-form-item>
+
+            <el-form-item label="菜单路径" prop="moduleUrl">
+                <el-input v-model="form.moduleUrl" maxlength="100" show-word-limit></el-input>
+            </el-form-item>
+
+            <el-form-item label="菜单权重" prop="priority">
+                <el-input v-model="form.priority"></el-input>
+            </el-form-item>
+
+            <el-form-item>
+                <el-button type="primary" @click="save">保存</el-button>
+                <el-button @click="dialogAddVisible = false">取消</el-button>
+            </el-form-item>
+        </el-form>
+    </el-dialog>
+
+
+</div>
+
+
+<th:block th:replace="common/common::common_Footer(~{::script})">
+    <script th:inline="javascript">
+
+        csrfHeaderName = [[${_csrf.headerName}]];
+        csrfToken = [[${_csrf.token}]];
+        let id = 1000;
+
+        var app = new Vue({
+            el: '#app',
+            data: function () {
+                return {
+                    dialogTitle: "",
+                    menu: [],
+                    dialogAddVisible: false,
+                    form: {
+                        id: null,
+                        parentData: {},
+                        parent: "",
+                        parentName: "",
+                        moduleName: "",
+                        moduleDesc: "",
+                        priority: "",
+                        moduleUrl: "",
+                    }
+                }
+            },
+            methods: {
+                getMoudleTree(){
+                    atutils.postJson('/user/moduleTree', {}, null, false, function (data) {
+                        app.menu = [data.result];
+                    });
+                },
+                showDialogAdd(data) {
+                    //弹窗录入信息后到后台保存
+                    this.dialogTitle = "新增菜单";
+                    this.dialogAddVisible = true;
+                    this.form.parentName = data.name;
+                    this.form.parent = data.id;
+                    this.form.parentData = data;
+                    this.form.id = null;
+                    this.form.moduleName = "";
+                    this.form.priority = "";
+                    this.form.moduleUrl = "";
+                },
+                showDialogEdit(node, data) {
+                    //弹窗录入信息后到后台保存
+                    const parent = node.parent;
+                    this.dialogTitle = "编辑菜单";
+                    this.dialogAddVisible = true;
+                    this.form.parentName = parent.data.name;
+                    this.form.parent = parent.data.id;
+                    this.form.parentData = parent.data;
+                    this.form.id = node.data.id;
+                    this.form.moduleName = node.data.name;
+                    this.form.priority = node.data.moduleInfo.priority;
+                    this.form.moduleUrl = node.data.moduleInfo.moduleUrl;
+                },
+                save(){
+                    this.$refs['form'].validate((valid) => {
+                        if (valid) {
+                            //验证成功后提交表单
+                            this.dialogAddVisible = false;
+                            atutils.postJson("/module/save", this.form, {}, true, function () {
+                                app.getMoudleTree();
+                                window.top.app.getModuleTree();
+                            })
+                        } else {
+                            return false;
+                        }
+                    });
+                },
+                remove(node, data) {
+                    //删除之前判断有没子辈 提示或不警告
+                    this.$confirm('若含有子菜单，删除后子菜单也会被删除', '确认删除', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        atutils.postXform("/module/delete", {id:data.id}, {}, true, function () {
+                            app.getMoudleTree();
+                            window.top.app.getModuleTree();
+                        })
+                    }).catch(() => {
+
+                    });
+                }
+            },
+            created: function () {
+                this.getMoudleTree();
+            },
+            mounted: function () {
+
+            }
+        })
+    </script>
+</th:block>
+</body>
+
+
+</html>

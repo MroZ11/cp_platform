@@ -1,0 +1,41 @@
+html,body{margin:0px; height:100%; }
+
+.el-header{
+
+    background: #fff;
+    position: absolute;
+    top: 0px;
+    left: 0;
+    width: 100%;
+
+}
+.el-footer{
+    background: #fff;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    z-index: 100;
+    vertical-align: middle;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.el-main {
+    background-image: url("/static/ico/bg_weixin2019.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    top: 100px;
+    bottom: 100px;
+    width: 100%;
+    position: absolute;
+    left: 0px;
+}
+
+.box-card{
+    position: fixed;
+    top: 30%;
+    right: 10%;
+
+}

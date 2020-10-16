@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="common_header(title,links)">
+    <meta charset="UTF-8" />
+    <title th:replace="${title}">The awesome application</title>
+
+    <!-- Common styles and scripts -->
+    <link rel="shortcut icon" th:href="@{/static/ico/logo-small.png}">
+    <!--?<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">-->
+    <link rel="stylesheet" th:href="@{/static/css/element-ui.css}">
+    <link rel="stylesheet" th:href="@{/static/css/common.css}">
+
+
+    <th:block th:replace="${links}" />
+    <style>
+        [v-cloak] {
+            display:none !important;
+        }
+    </style>
+    <script th:src="@{/static/js/vue/vue.min.js}"></script>
+    <script th:src="@{/static/js/axios/axios.min.js}"></script>
+    <script th:src="@{/static/js/websocket/sockjs.min.js}"></script>
+    <script th:src="@{/static/js/websocket/stomp.min.js}" ></script>
+    <!--?<script src="https://unpkg.com/axios/dist/axios.min.js"></script>-->
+</head>
+<body>
+
+
+<th:block th:fragment="common_Footer(script)">
+    <!--?<script src="https://unpkg.com/element-ui/lib/index.js"></script>-->
+    <script th:src="@{/static/js/element-ui/index.js}"></script>
+    <script th:src="@{/static/js/qs/qs.min.js}"></script>
+    <script th:src="@{/static/js/utils/atutils.js}"></script>
+
+
+    <th:block th:replace="${script}" />
+</th:block>
+
+</body>
+</html>

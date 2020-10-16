@@ -1,0 +1,30 @@
+body, html {
+    font-family: "Helvetica Neue",Helvetica,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","微软雅黑",Arial,sans-serif;
+}
+.box-card{
+    margin-top: 5px;
+}
+
+
+.box-card-item {
+   /* margin-bottom: 18px;*/
+    font-size: 14px;
+}
+.box-card-item-link{
+    margin-left: 8px;
+
+}
+
+.el-hidden{
+    display: none;
+}
+
+.opDiv .left{
+    float: left;
+    margin-bottom: 5px;
+}
+
+.opDiv .right{
+    float: right;
+    margin-bottom: 5px;
+}

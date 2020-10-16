@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+        xmlns:v-on="http://www.w3.org/1999/xhtml"
+        xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity5"
+>
+
+<head th:replace="common/common::common_header(~{::title},~{::link})">
+    <title>错误 错误</title>
+    <link rel="stylesheet" th:href="@{/static/css/home.css}">
+</head>
+
+<body>
+
+<div id="app" v-cloak>
+    错误  错误  错误
+
+
+
+    <p>详情：{{error_message}}</p>
+
+
+</div>
+
+
+<th:block th:replace="common/common::common_Footer(~{::script})">
+    <script th:inline="javascript">
+
+        var app = new Vue({
+            el: '#app',
+            data: function () {
+                return {
+                    error_message: [[${message}]],
+                }
+            },
+            methods: {
+
+            },
+            created: function () {
+
+
+            }
+
+        })
+
+
+    </script>
+</th:block>
+</body>
+
+
+</html>
