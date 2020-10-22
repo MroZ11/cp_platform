@@ -28,7 +28,7 @@ public class ChargeController {
 
     @RequestMapping(value = "create")
     public Object create(@ModelAttribute("user") UserInfo userInfo) {
-
+        System.out.println("create");
         return null;
     }
 

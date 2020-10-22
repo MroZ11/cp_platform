@@ -13,6 +13,6 @@ public class ChargeCreate {
     Double amount;
     String client_ip;
     String subject;
-    String String;
+    String body;
     Object metadata;
 }

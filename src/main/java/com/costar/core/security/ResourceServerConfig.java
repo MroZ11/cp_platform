@@ -20,10 +20,10 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
      */
     @Override
     public void configure(HttpSecurity http) throws Exception {
-        http.requestMatchers().antMatchers("/invoiceApi/**")
+        http.requestMatchers().antMatchers("/api/v1/charge/**","api/v1/refund")
                 .and()
                 .authorizeRequests()
-                .anyRequest().access("#oauth2.hasScope('invoiceApi')")
+                .anyRequest().access("#oauth2.hasScope('channel_pay_api')")
                 /*.antMatchers("/api*//**")*/
                 .and();
 
